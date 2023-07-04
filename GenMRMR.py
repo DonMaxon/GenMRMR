@@ -442,6 +442,13 @@ class GenMRMR:
     
 
     def fit_transform(self, data, labels):
+        """
+        Method is used to fit and then transform data using GenMRMR
+
+        Args:
+            data: data to transform
+            labels: labels for data
+        """  
         x_train, x_cv, y_train, y_cv = self.__split_data(data, labels)
         self.fit(x_train, y_train, x_cv, y_cv)
         return self.transform(data.to_numpy())
