@@ -1,12 +1,14 @@
 import numpy
 import dask
-import dask.array as da
 
 from sklearn import feature_selection
 from sklearn.metrics import f1_score
 from ITMO_FS.filters.multivariate import MRMR
 from dask import delayed
 from sklearn.feature_selection import mutual_info_classif
+from sklearn import model_selection
+from imblearn.over_sampling import RandomOverSampler
+from sklearn.preprocessing import StandardScaler
 
 class Family:
         
@@ -242,7 +244,6 @@ class GenMRMR:
         """  
         npop = []
         for i in range(len(parents)):
-            #Если качество предыдущего поколения больше, то вероятность мутации больше
             if (prev_f-qualities[i]<0):
                 mutation_probability = self.__find_parents_similarity(parents[i], population)+max(qualities)-qualities[i]
             else:
@@ -366,6 +367,25 @@ class GenMRMR:
             raise ValueError("Number of features in cv and train datasets must be equal")
         pass
 
+    def __split_data(self, data, labels):
+        """
+        Method is used to split data for fit_transform
+
+        Args:
+            data, labels: train data and labels that will be used for feature selection and transformation
+        """  
+        oversample = RandomOverSampler(sampling_strategy="minority")
+        x_train, x_cv, y_train, y_cv = model_selection.train_test_split(
+            data, labels, test_size=0.25, train_size=0.75
+        )
+        x_train, y_train = oversample.fit_resample(x_train, y_train)
+        x_cv, y_cv = oversample.fit_resample(x_cv, y_cv)
+        scaler = StandardScaler()
+        scaler = scaler.fit(data)
+        x_train = scaler.transform(x_train)
+        x_cv = scaler.transform(x_cv)
+        return x_train, x_cv, y_train, y_cv
+
     def fit(self, x_train, y_train, x_cv, y_cv):
         """
         Method is used to fit GenMRMR to given
@@ -393,7 +413,6 @@ class GenMRMR:
                     best_individuum=population[i]
                     iterations_without_increase_f=0
                 qualities.append(cur_f_of_individuum)
-                #print(cur_f_of_individuum)
             deviation_of_qualities = self.__deviation_from_max(qualities)
             ratings_of_individuums = self.__ratings_in_population(population, qualities)
             if (self.write_info):
@@ -419,4 +438,11 @@ class GenMRMR:
         for i in range(1, len(self.__features)):
             result = numpy.column_stack((result, data[:, self.__features[i]]))
         return result
+    
+    
+
+    def fit_transform(self, data, labels):
+        x_train, x_cv, y_train, y_cv = self.__split_data(data, labels)
+        self.fit(x_train, y_train, x_cv, y_cv)
+        return self.transform(data.to_numpy())
     
