@@ -388,7 +388,7 @@ class GenMRMR:
 
     def fit(self, x_train, y_train, x_cv, y_cv):
         """
-        Method is used to fit GenMRMR to given
+        Method is used to fit GenMRMR using given data
 
         Args:
             x_train, y_train, x_cv, y_cv: train and cv data and labels that will be used for feature selection
